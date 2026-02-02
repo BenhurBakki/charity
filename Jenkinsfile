@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven-3.9.6'
-    }
-
     stages {
 
         stage('Clone Code') {
@@ -36,15 +32,6 @@ pipeline {
                 docker run -d --name charity-2 -p 8081:8080 charity-app
                 '''
             }
-        }
-    }
-
-    post {
-        success {
-            echo '✅ Application deployed successfully'
-        }
-        failure {
-            echo '❌ Deployment failed'
         }
     }
 }
