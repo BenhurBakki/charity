@@ -1,52 +1,50 @@
 pipeline {
     agent any
 
-    environment {
-        IMAGE_NAME = "prasad67/maven-web-app"
+    tools {
+        maven 'Maven-3.9.6'
     }
 
     stages {
 
-        stage('Checkout Code') {
+        stage('Clone Code') {
             steps {
-                checkout scm
+                git branch: 'master',
+                    url: 'https://github.com/BenhurBakki/charity.git'
             }
         }
 
-        stage('Build WAR') {
+        stage('Maven Build') {
             steps {
                 sh 'mvn clean package'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Docker Build') {
             steps {
-                sh '''
-                  docker build -t $IMAGE_NAME:${BUILD_NUMBER} .
-                '''
+                sh 'docker build -t charity-app .'
             }
         }
 
-        stage('Login to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh '''
-                      echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    '''
-                }
-            }
-        }
-
-        stage('Push Image to Docker Hub') {
+        stage('Deploy Containers') {
             steps {
                 sh '''
-                  docker push $IMAGE_NAME:${BUILD_NUMBER}
+                docker stop charity charity-2 || true
+                docker rm charity charity-2 || true
+
+                docker run -d --name charity -p 8080:8080 charity-app
+                docker run -d --name charity-2 -p 8081:8080 charity-app
                 '''
             }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Application deployed successfully'
+        }
+        failure {
+            echo '❌ Deployment failed'
         }
     }
 }
